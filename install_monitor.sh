@@ -1,6 +1,11 @@
 #!/bin/bash
 # 修复版系统监控安装脚本
 
+# 配置项（用户可以根据需要修改）
+MAILPIT_HOST="mail.maifeipin.com"
+SENDER_EMAIL="sender@example.com"
+RECEIVER_EMAIL="receiver@maifeipin.com"
+
 # 检查并安装telnet
 install_telnet() {
     if ! command -v telnet &> /dev/null; then
@@ -33,9 +38,17 @@ install_telnet() {
 install_monitor() {
     echo "正在下载并安装监控脚本..."
     
-    # 创建临时文件
-    TMP_SCRIPT=$(mktemp)
-    curl -sL https://raw.githubusercontent.com/maifeipin/AutoIT/main/system_monitor.sh > "$TMP_SCRIPT"
+    # 创建临时文件目录，如果不存在则创建
+    TMP_DIR=$(mktemp -d)
+    TMP_SCRIPT="${TMP_DIR}/system_monitor.sh"
+
+    # 下载脚本
+    curl -sL https://raw.githubusercontent.com/maifeipin/AutoIT/main/system_monitor.sh -o "$TMP_SCRIPT"
+    
+    if [[ ! -f "$TMP_SCRIPT" ]]; then
+        echo "下载监控脚本失败，脚本未找到！"
+        exit 1
+    fi
     
     # 替换配置参数
     sed -i \
@@ -70,11 +83,6 @@ EOF
     sudo systemctl daemon-reload
 }
 
-# 主安装流程
-echo "=== 系统监控脚本安装程序 ==="
-install_telnet
-install_monitor
-
 # 启动服务（增加状态检查）
 start_service() {
     echo -e "\n启动监控服务..."
@@ -93,6 +101,11 @@ start_service() {
     journalctl -u system-monitor -n 10 --no-pager
     exit 1
 }
+
+# 主安装流程
+echo "=== 系统监控脚本安装程序 ==="
+install_telnet
+install_monitor
 
 start_service
 
