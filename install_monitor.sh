@@ -38,10 +38,15 @@ install_telnet() {
 install_monitor() {
     echo "正在下载并安装监控脚本..."
     
-    # 创建临时文件目录，如果不存在则创建
+    # 创建临时目录并检查
     TMP_DIR=$(mktemp -d)
-    TMP_SCRIPT="${TMP_DIR}/system_monitor.sh"
+    if [[ ! -d "$TMP_DIR" ]]; then
+        echo "无法创建临时目录！"
+        exit 1
+    fi
 
+    TMP_SCRIPT="${TMP_DIR}/system_monitor.sh"
+    
     # 下载脚本
     curl -sL https://raw.githubusercontent.com/maifeipin/AutoIT/main/system_monitor.sh -o "$TMP_SCRIPT"
     
@@ -57,8 +62,13 @@ install_monitor() {
         -e "s|^RECEIVER_EMAIL=.*|RECEIVER_EMAIL=\"${RECEIVER_EMAIL:-receiver@maifeipin.com}\"|" \
         "$TMP_SCRIPT"
     
-    # 安装脚本
+    # 安装脚本到指定目录
     sudo install -m 755 "$TMP_SCRIPT" /usr/local/bin/system_monitor
+    if [[ $? -ne 0 ]]; then
+        echo "安装监控脚本失败！"
+        exit 1
+    fi
+    
     rm -f "$TMP_SCRIPT"
     
     # 创建服务文件
@@ -80,6 +90,7 @@ Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 WantedBy=multi-user.target
 EOF
 
+    # 重新加载 systemd 配置
     sudo systemctl daemon-reload
 }
 
