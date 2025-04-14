@@ -1,10 +1,11 @@
 #!/bin/bash
 # 修复版系统监控安装脚本
 
-# 配置项（用户可以根据需要修改）
-MAILPIT_HOST="mail.maifeipin.com"
-SENDER_EMAIL="sender@example.com"
-RECEIVER_EMAIL="receiver@maifeipin.com"
+# 检查是否以root权限执行
+if [ "$(id -u)" -ne 0 ]; then
+    echo "该脚本需要以root身份执行，请使用 sudo 执行"
+    exit 1
+fi
 
 # 检查并安装telnet
 install_telnet() {
@@ -12,12 +13,12 @@ install_telnet() {
         echo "正在安装telnet客户端..."
         
         if [[ -f /etc/debian_version ]]; then
-            sudo apt-get update -qq
-            sudo apt-get install -y telnet
+            apt-get update -qq
+            apt-get install -y telnet
         elif [[ -f /etc/redhat-release ]]; then
-            sudo yum install -y telnet
+            yum install -y telnet
         elif [[ -f /etc/alpine-release ]]; then
-            sudo apk add busybox-extras
+            apk add busybox-extras
         else
             echo "无法自动安装telnet：未知的Linux发行版"
             exit 1
@@ -55,15 +56,8 @@ install_monitor() {
         exit 1
     fi
     
-    # 替换配置参数
-    sed -i \
-        -e "s|^MAILPIT_HOST=.*|MAILPIT_HOST=\"${MAILPIT_HOST:-mail.maifeipin.com}\"|" \
-        -e "s|^SENDER_EMAIL=.*|SENDER_EMAIL=\"${SENDER_EMAIL:-sender@example.com}\"|" \
-        -e "s|^RECEIVER_EMAIL=.*|RECEIVER_EMAIL=\"${RECEIVER_EMAIL:-receiver@maifeipin.com}\"|" \
-        "$TMP_SCRIPT"
-    
     # 安装脚本到指定目录
-    sudo install -m 755 "$TMP_SCRIPT" /usr/local/bin/system_monitor
+    install -m 755 "$TMP_SCRIPT" /usr/local/bin/system_monitor
     if [[ $? -ne 0 ]]; then
         echo "安装监控脚本失败！"
         exit 1
@@ -72,7 +66,7 @@ install_monitor() {
     rm -f "$TMP_SCRIPT"
     
     # 创建服务文件
-    sudo tee /etc/systemd/system/system-monitor.service > /dev/null <<EOF
+    tee /etc/systemd/system/system-monitor.service > /dev/null <<EOF
 [Unit]
 Description=System Resource Monitor
 After=network.target
@@ -91,13 +85,13 @@ WantedBy=multi-user.target
 EOF
 
     # 重新加载 systemd 配置
-    sudo systemctl daemon-reload
+    systemctl daemon-reload
 }
 
 # 启动服务（增加状态检查）
 start_service() {
     echo -e "\n启动监控服务..."
-    sudo systemctl enable --now system-monitor
+    systemctl enable --now system-monitor
     
     # 等待服务启动
     for i in {1..5}; do
