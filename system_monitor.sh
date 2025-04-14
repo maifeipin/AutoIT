@@ -50,7 +50,7 @@ get_disk_usage() {
 
 # 网络检测（严格格式控制）
 get_packet_loss() {
-    local ping_output=$(ping -c 3 -W 2 qq.com 2>&1)
+    local ping_output=$(ping -c 3 -W 2 61.132.163.68 2>&1)
     if [[ $ping_output =~ ([0-9]+)%[[:space:]]+packet[[:space:]]+loss ]]; then
         loss="${BASH_REMATCH[1]}"
         if (( loss >= 0 && loss <= 100 )); then
