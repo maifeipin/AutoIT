@@ -52,10 +52,16 @@ get_disk_usage() {
 get_packet_loss() {
     local ping_output=$(ping -c 3 -W 2 qq.com 2>&1)
     if [[ $ping_output =~ ([0-9]+)%[[:space:]]+packet[[:space:]]+loss ]]; then
-        echo "${BASH_REMATCH[1]}"
+        loss="${BASH_REMATCH[1]}"
+        if (( loss >= 0 && loss <= 100 )); then
+            echo "$loss"
+        else
+            echo "100"  # 如果丢包率超出正常范围，视为完全丢包
+        fi
     else
         echo "100"  # 当无法检测时视为完全丢包
     fi
+
 }
 
 # 邮件发送（强制UTF-8编码）
